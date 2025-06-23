@@ -1,0 +1,38 @@
+version: '3'
+services:
+  keycloak-db:
+    image: postgres:13
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+    volumes:
+      - keycloak-data:/var/lib/postgresql/data
+    networks:
+      - tebex
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: password
+      KC_HOSTNAME: ${KC_HOSTNAME}
+    command: start-dev
+    ports:
+      - ${KEYCLOAK_PORT}:8080
+    depends_on:
+      - keycloak-db
+    networks:
+      - tebex
+
+volumes:
+  keycloak-data:
+networks:
+  tebex:
+    external: true

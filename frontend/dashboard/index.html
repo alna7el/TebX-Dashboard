@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TebX - Receptionist Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .clinic-info h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .clinic-info p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .status-indicators {
+            display: flex;
+            gap: 15px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-dot.online { background: #27ae60; }
+        .status-dot.busy { background: #f39c12; }
+        .status-dot.offline { background: #e74c3c; }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .refresh-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #2980b9;
+            transform: scale(1.05);
+        }
+
+        .overview-card {
+            grid-row: span 2;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
+        .doctor-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .doctor-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .doctor-item.busy {
+            border-left-color: #f39c12;
+        }
+
+        .doctor-item.unavailable {
+            border-left-color: #e74c3c;
+        }
+
+        .doctor-name {
+            font-weight: 500;
+        }
+
+        .doctor-speciality {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .doctor-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            color: white;
+        }
+
+        .doctor-status.available { background: #27ae60; }
+        .doctor-status.busy { background: #f39c12; }
+        .doctor-status.unavailable { background: #e74c3c; }
+
+        .queue-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .queue-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+
+        .queue-item.emergency {
+            border-left: 4px solid #e74c3c;
+            background: #fff5f5;
+        }
+
+        .patient-info {
+            flex: 1;
+        }
+
+        .patient-name {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .emergency-label {
+            color: #e74c3c;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .patient-details {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .queue-position {
+            background: #3498db;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .queue-position.emergency {
+            background: #e74c3c;
+        }
+
+        .actions-panel {
+            display: grid;
+            gap: 15px;
+        }
+
+        .action-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .action-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+
+        .search-results {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .search-result {
+            padding: 8px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .search-result:hover {
+            background: #f1f2f6;
+        }
+
+        .emergency-form {
+            background: #fff5f5;
+            border: 2px solid #e74c3c;
+        }
+
+        .last-updated {
+            font-size: 10px;
+            color: #7f8c8d;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success { background: #27ae60; }
+        .notification.error { background: #e74c3c; }
+        .notification.warning { background: #f39c12; }
+
+        @media (max-width: 1024px) {
+            .dashboard-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        /* Demo mode banner */
+        .demo-banner {
+            background-color: #f39c12;
+            color: white;
+            text-align: center;
+            padding: 8px;
+            font-weight: bold;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: none;
+        }
+
+        .demo-banner.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="clinic-info">
+                <h1 id="clinic-name">TebX Medical Center</h1>
+                <p id="current-date">Monday, June 23, 2025</p>
+            </div>
+            <div class="status-indicators">
+                <div class="status-indicator">
+                    <div class="status-dot online"></div>
+                    <span>System Online</span>
+                </div>
+                <div class="status-indicator">
+                    <div class="status-dot" id="connection-status"></div>
+                    <span id="connection-text">Connected</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clinic Overview -->
+        <div class="card overview-card">
+            <div class="card-header">
+                <h2 class="card-title"><i class="fas fa-chart-line"></i> Clinic Overview</h2>
+                <button class="refresh-btn" onclick="simulateProgress()">
+                    <i class="fas fa-sync-alt"></i> Simulate Progress
+                </button>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-number" id="total-appointments">0</span>
+                    <div class="stat-label">Total Appointments</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="completed-appointments">0</span>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="waiting-patients">0</span>
+                    <div class="stat-label">Waiting</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="avg-wait-time">0</span>
+                    <div class="stat-label">Avg Wait (min)</div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 15px; color: #2c3e50;">Doctor Status</h3>
+            <div class="doctor-list" id="doctor-list">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+
+            <div class="last-updated" id="overview-updated">
+                Last updated: --
+            </div>
+        </div>
+
+        <!-- Waiting Room Queue -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title"><i class="fas fa-users"></i> Waiting Room</h2>
+            </div>
+            
+            <div class="stats-grid" style="margin-bottom: 15px;">
+                <div class="stat-item">
+                    <span class="stat-number" id="queue-count">0</span>
+                    <div class="stat-label">In Queue</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="being-served">0</span>
+                    <div class="stat-label">Being Served</div>
+                </div>
+            </div>
+
+            <div class="queue-list" id="queue-list">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+
+            <div class="last-updated" id="queue-updated">
+                Last updated: --
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title"><i class="fas fa-bolt"></i> Quick Actions</h2>
+            </div>
+            
+            <div class="actions-panel">
+                <!-- Patient Check-in -->
+                <div class="action-section">
+                    <div class="action-title">Patient Check-in</div>
+                    <div class="form-group">
+                        <label class="form-label">Search Patient</label>
+                        <input type="text" class="form-input" id="patient-search" 
+                               placeholder="Name, phone, or MRN" 
+                               oninput="searchPatients(this.value)">
+                    </div>
+                    <div class="search-results" id="search-results"></div>
+                    <button class="btn btn-success" onclick="checkInSelected()">
+                        <i class="fas fa-check"></i> Check In
+                    </button>
+                </div>
+
+                <!-- Emergency Booking -->
+                <div class="action-section emergency-form">
+                    <div class="action-title" style="color: #e74c3c;">Emergency Booking</div>
+                    <div class="form-group">
+                        <label class="form-label">Priority Level</label>
+                        <select class="form-select" id="emergency-priority">
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reason</label>
+                        <input type="text" class="form-input" id="emergency-reason" 
+                               placeholder="Emergency reason">
+                    </div>
+                    <button class="btn btn-danger" onclick="createEmergencyBooking()">
+                        <i class="fas fa-exclamation-triangle"></i> Create Emergency
+                    </button>
+                </div>
+
+                <!-- Quick Operations -->
+                <div class="action-section">
+                    <div class="action-title">Quick Operations</div>
+                    <button class="btn btn-primary" onclick="showBulkUpdate()">
+                        <i class="fas fa-edit"></i> Bulk Cancel
+                    </button>
+                    <button class="btn btn-warning" onclick="showReschedule()">
+                        <i class="fas fa-calendar-alt"></i> Reschedule
+                    </button>
+                    <button class="btn btn-primary" onclick="showAnalytics()">
+                        <i class="fas fa-chart-bar"></i> Analytics
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification" class="notification"></div>
+    
+    <!-- Demo Mode Banner -->
+    <div id="demo-banner" class="demo-banner">
+        DEMO MODE - Using simulated data
+    </div>
+
+    <script>
+        // --- STATE MANAGEMENT & MOCK DATA ---
+        let selectedPatient = null;
+        
+        const mockState = {
+            config: {
+                averageServiceTime: 15, // minutes
+            },
+            patients: [
+                { id: "pat-1", name: "Ahmed Mohammed", mrn: "MRN001" },
+                { id: "pat-2", name: "Fatima Ahmed", mrn: "MRN002" },
+                { id: "pat-3", name: "Mohammed Ali", mrn: "MRN003" },
+                { id: "pat-4", name: "Sara Mahmoud", mrn: "MRN004" },
+                { id: "pat-5", name: "Khalid Abdulrahman", mrn: "MRN005" },
+            ],
+            doctors: [
+                { id: "doc-1", name: "Dr. Sarah Johnson", speciality: "Cardiology" },
+                { id: "doc-2", name: "Dr. Ahmed Al-Rashid", speciality: "General Medicine" },
+                { id: "doc-3", name: "Dr. Maria Garcia", speciality: "Pediatrics" },
+            ],
+            appointments: []
+        };
+
+        function generateInitialAppointments() {
+            mockState.appointments = [];
+            for (let i = 0; i < 25; i++) {
+                mockState.appointments.push({
+                    id: `apt-${i+1}`,
+                    patientId: mockState.patients[i % 5].id,
+                    doctorId: mockState.doctors[i % 3].id,
+                    service: "Consultation",
+                    scheduledTime: `${9 + Math.floor(i/4)}:${(i%4)*15 || '00'}`,
+                    status: 'Scheduled', // Scheduled, Arrived, InProgress, Completed, Cancelled
+                    isEmergency: false,
+                    arrivalTime: null,
+                });
+            }
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', function() {
+            generateInitialAppointments();
+            updateDashboardUI();
+            updateDateTime();
+            setInterval(updateDateTime, 60000);
+            document.getElementById('demo-banner').classList.add('show');
+            updateConnectionStatus(false);
+        });
+
+        // --- CORE LOGIC & STATE CALCULATION ---
+        function calculateDashboardState() {
+            const { appointments, doctors, config } = mockState;
+            
+            const inProgress = appointments.filter(a => a.status === 'InProgress');
+            const arrived = appointments.filter(a => a.status === 'Arrived');
+            const completed = appointments.filter(a => a.status === 'Completed');
+            const scheduled = appointments.filter(a => a.status === 'Scheduled');
+            
+            const busyDoctorIds = inProgress.map(a => a.doctorId);
+            const availableDoctors = doctors.filter(d => !busyDoctorIds.includes(d.id));
+
+            const appointmentSummary = {
+                total: appointments.filter(a => a.status !== 'Cancelled').length,
+                completed: completed.length,
+                inProgress: inProgress.length,
+                waiting: arrived.length,
+                scheduled: scheduled.length,
+            };
+
+            const patientFlow = {
+                waiting: arrived.length,
+                withDoctor: inProgress.length,
+            };
+
+            const avgWaitTime = availableDoctors.length > 0
+                ? Math.ceil((arrived.length / availableDoctors.length) * config.averageServiceTime)
+                : 99; // High wait time if no doctors are free
+
+            const doctorStatus = doctors.map(doc => {
+                const assignedPatient = inProgress.find(a => a.doctorId === doc.id);
+                return {
+                    ...doc,
+                    isAvailable: !assignedPatient,
+                    currentPatients: assignedPatient ? 1 : 0,
+                };
+            });
+            
+            // Sort waiting room queue - emergency patients first, then by arrival time
+            const waitingRoomQueue = [...arrived].sort((a, b) => {
+                // Sort by emergency status first (emergencies first)
+                if (a.isEmergency && !b.isEmergency) return -1;
+                if (!a.isEmergency && b.isEmergency) return 1;
+                // Then sort by arrival time
+                return a.arrivalTime - b.arrivalTime;
+            });
+            
+            return {
+                appointmentSummary,
+                patientFlow,
+                avgWaitTime,
+                doctorStatus,
+                waitingRoomQueue,
+            };
+        }
+
+        // --- UI UPDATE FUNCTIONS ---
+        function updateDashboardUI() {
+            const state = calculateDashboardState();
+            
+            // Overview Card
+            document.getElementById('total-appointments').textContent = state.appointmentSummary.total;
+            document.getElementById('completed-appointments').textContent = state.appointmentSummary.completed;
+            document.getElementById('waiting-patients').textContent = state.patientFlow.waiting;
+            document.getElementById('avg-wait-time').textContent = state.avgWaitTime;
+            
+            const doctorList = document.getElementById('doctor-list');
+            doctorList.innerHTML = state.doctorStatus.map(doc => `
+                <div class="doctor-item ${doc.isAvailable ? 'available' : 'busy'}">
+                    <div>
+                        <div class="doctor-name">${doc.name}</div>
+                        <div class="doctor-speciality">${doc.speciality}</div>
+                    </div>
+                    <div class="doctor-status ${doc.isAvailable ? 'available' : 'busy'}">
+                        ${doc.isAvailable ? 'Available' : 'Busy'}
+                    </div>
+                </div>`).join('') || '<p style="text-align: center; color: #7f8c8d;">No doctors available</p>';
+
+            // Waiting Room Card
+            document.getElementById('queue-count').textContent = state.patientFlow.waiting;
+            document.getElementById('being-served').textContent = state.patientFlow.withDoctor;
+
+            const queueList = document.getElementById('queue-list');
+            queueList.innerHTML = state.waitingRoomQueue.map((apt, index) => {
+                const patient = mockState.patients.find(p => p.id === apt.patientId);
+                return `
+                <div class="queue-item ${apt.isEmergency ? 'emergency' : ''}">
+                    <div class="patient-info">
+                        <div class="patient-name">
+                            ${apt.isEmergency ? '<span class="emergency-label">EMERGENCY:</span>' : ''}
+                            ${patient.name}
+                        </div>
+                        <div class="patient-details">
+                            ${patient.mrn} • ${apt.service} • ${apt.scheduledTime}
+                        </div>
+                    </div>
+                    <div class="queue-position ${apt.isEmergency ? 'emergency' : ''}">${index + 1}</div>
+                </div>`;
+            }).join('') || '<p style="text-align: center; color: #7f8c8d;">No patients in queue</p>';
+
+            updateLastUpdated('overview-updated');
+            updateLastUpdated('queue-updated');
+        }
+
+        // --- USER ACTIONS ---
+        function simulateProgress() {
+            showNotification('Simulating clinic progress...', 'success');
+            
+            // 1. A doctor finishes with a patient
+            const inProgressAppt = mockState.appointments.find(a => a.status === 'InProgress');
+            if (inProgressAppt) {
+                inProgressAppt.status = 'Completed';
+            }
+
+            // 2. An available doctor takes the next patient from the queue
+            // First check for emergency patients
+            let nextPatient = mockState.appointments.find(a => a.status === 'Arrived' && a.isEmergency);
+            
+            // If no emergency patients, take the next regular patient by arrival time
+            if (!nextPatient) {
+                const waitingPatients = mockState.appointments
+                    .filter(a => a.status === 'Arrived')
+                    .sort((a, b) => a.arrivalTime - b.arrivalTime);
+                nextPatient = waitingPatients[0];
+            }
+            
+            if (nextPatient) {
+                const availableDoctor = mockState.doctors.find(d => 
+                    !mockState.appointments.some(a => a.doctorId === d.id && a.status === 'InProgress')
+                );
+                if (availableDoctor) {
+                    nextPatient.status = 'InProgress';
+                    nextPatient.doctorId = availableDoctor.id; // Re-assign to the free doctor
+                }
+            }
+            updateDashboardUI();
+        }
+
+        function searchPatients(searchTerm) {
+            if (!searchTerm || searchTerm.length < 2) {
+                document.getElementById('search-results').innerHTML = '';
+                return;
+            }
+            const searchTermLower = searchTerm.toLowerCase();
+            const results = mockState.patients.filter(p =>
+                p.name.toLowerCase().includes(searchTermLower) ||
+                p.mrn.toLowerCase().includes(searchTermLower)
+            );
+            displaySearchResults(results);
+        }
+
+        function checkInSelected() {
+            if (!selectedPatient) {
+                showNotification('Please select a patient first', 'warning');
+                return;
+            }
+            
+            const appointment = mockState.appointments.find(a => a.patientId === selectedPatient.id && a.status === 'Scheduled');
+            if (!appointment) {
+                showNotification(`${selectedPatient.name} has no scheduled appointment to check in.`, 'error');
+                return;
+            }
+
+            appointment.status = 'Arrived';
+            appointment.arrivalTime = new Date();
+            showNotification(`${selectedPatient.name} checked in successfully.`, 'success');
+            
+            clearPatientSelection();
+            updateDashboardUI();
+        }
+
+        function createEmergencyBooking() {
+            if (!selectedPatient) {
+                showNotification('Please select a patient for the emergency.', 'warning');
+                return;
+            }
+            const reason = document.getElementById('emergency-reason').value;
+            if (!reason) {
+                showNotification('Please provide an emergency reason.', 'warning');
+                return;
+            }
+            
+            const priority = document.getElementById('emergency-priority').value;
+
+            const newEmergencyAppointment = {
+                id: `apt-emergency-${Date.now()}`,
+                patientId: selectedPatient.id,
+                doctorId: null, // To be assigned
+                service: `Emergency: ${reason} (${priority})`,
+                scheduledTime: "ASAP",
+                status: 'Arrived',
+                isEmergency: true,
+                arrivalTime: new Date(),
+                priority: priority
+            };
+
+            mockState.appointments.push(newEmergencyAppointment);
+            showNotification(`Emergency booking for ${selectedPatient.name} created.`, 'success');
+            
+            document.getElementById('emergency-reason').value = '';
+            clearPatientSelection();
+            updateDashboardUI();
+        }
+
+        function showBulkUpdate() {
+            const scheduledAppointments = mockState.appointments.filter(a => a.status === 'Scheduled');
+            const toCancel = scheduledAppointments.slice(0, 3); // Cancel first 3
+            
+            if (toCancel.length === 0) {
+                showNotification('No scheduled appointments to cancel.', 'warning');
+                return;
+            }
+            
+            // Add confirmation dialog
+            if (confirm(`Are you sure you want to cancel ${toCancel.length} appointments?`)) {
+                toCancel.forEach(a => a.status = 'Cancelled');
+                showNotification(`${toCancel.length} appointments have been cancelled.`, 'success');
+                updateDashboardUI();
+            }
+        }
+
+        function showReschedule() {
+            if (!selectedPatient) {
+                showNotification('Please select a patient to reschedule.', 'warning');
+                return;
+            }
+            const appointment = mockState.appointments.find(a => a.patientId === selectedPatient.id && (a.status === 'Scheduled' || a.status === 'Arrived'));
+            if (!appointment) {
+                showNotification(`${selectedPatient.name} has no active appointment to reschedule.`, 'error');
+                return;
+            }
+            appointment.scheduledTime = prompt("Enter new time (e.g., 15:30):", appointment.scheduledTime) || appointment.scheduledTime;
+            showNotification(`Appointment for ${selectedPatient.name} rescheduled.`, 'success');
+            clearPatientSelection();
+            updateDashboardUI();
+        }
+
+        function showAnalytics() {
+            const state = calculateDashboardState();
+            const { total, completed, waiting, inProgress, scheduled } = state.appointmentSummary;
+            
+            // Calculate doctor utilization
+            const busyDoctors = state.doctorStatus.filter(d => !d.isAvailable).length;
+            const totalDoctors = state.doctorStatus.length;
+            const doctorUtilization = totalDoctors > 0 ? Math.round((busyDoctors / totalDoctors) * 100) : 0;
+            
+            // Calculate completion rate
+            const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+            
+            // Count emergency appointments
+            const emergencyCount = mockState.appointments.filter(a => a.isEmergency).length;
+            
+            // Create a more detailed analytics display
+            const analyticsData = `
+=== CLINIC ANALYTICS ===
+
+APPOINTMENTS
+• Total Appointments: ${total}
+• Completed: ${completed} (${completionRate}%)
+• In Progress: ${inProgress}
+• Waiting: ${waiting}
+• Scheduled: ${scheduled}
+• Emergency Cases: ${emergencyCount}
+
+PATIENT FLOW
+• Average Wait Time: ${state.avgWaitTime} minutes
+• Patients Currently in Building: ${waiting + inProgress}
+
+DOCTOR UTILIZATION
+• Busy Doctors: ${busyDoctors}/${totalDoctors} (${doctorUtilization}%)
+• Available Doctors: ${totalDoctors - busyDoctors}
+
+=== Generated at ${new Date().toLocaleTimeString()} ===`;
+            
+            alert(analyticsData);
+        }
+
+        // --- UI HELPER FUNCTIONS ---
+        function displaySearchResults(results) {
+            const container = document.getElementById('search-results');
+            if (!results || results.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 10px;">No patients found</p>';
+                return;
+            }
+            container.innerHTML = results.map(patient => `
+                <div class="search-result" onclick='selectPatient(${JSON.stringify(patient)})'>
+                    <strong>${patient.name}</strong><br>
+                    <small>${patient.mrn}</small>
+                </div>`).join('');
+        }
+
+        function selectPatient(patient) {
+            if (!patient) return;
+            selectedPatient = patient;
+            document.getElementById('patient-search').value = patient.name;
+            document.getElementById('search-results').innerHTML = '';
+            showNotification(`Selected: ${patient.name}`, 'success');
+        }
+
+        function clearPatientSelection() {
+            selectedPatient = null;
+            document.getElementById('patient-search').value = '';
+            document.getElementById('search-results').innerHTML = '';
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusDot = document.getElementById('connection-status');
+            const statusText = document.getElementById('connection-text');
+            if (connected) {
+                statusDot.className = 'status-dot online';
+                statusText.textContent = 'Connected';
+            } else {
+                statusDot.className = 'status-dot offline';
+                statusText.textContent = 'Demo Mode';
+            }
+        }
+
+        function updateLastUpdated(elementId) {
+            const now = new Date().toLocaleTimeString();
+            document.getElementById(elementId).textContent = `Last updated: ${now}`;
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            setTimeout(() => { notification.classList.remove('show'); }, 3000);
+        }
+    </script>
+</body>
+</html>

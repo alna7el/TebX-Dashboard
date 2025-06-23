@@ -1,0 +1,18 @@
+version: '3'
+services:
+  app:
+    container_name: tebex-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - ${APP_PORT}:${APP_PORT}
+    environment:
+      NODE_ENV: production
+      KEYCLOAK_URL: ${KEYCLOAK_URL}
+      DATABASE_URL: ${DATABASE_URL}
+    networks:
+      - tebex
+networks:
+  tebex:
+    external: true

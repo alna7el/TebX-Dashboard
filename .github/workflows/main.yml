@@ -1,0 +1,19 @@
+name: Deploy Staging
+on:
+  push:
+    branches:
+    - main
+    
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - id: ssh
+      uses: invi5H/ssh-action@v1
+      with:
+        SSH_KEY: ${{ secrets.DEPLOY_PK }}
+        SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+        SSH_USER: ${{ secrets.DEPLOY_USER }}
+        SSH_PORT: 22
+    - run: ssh ${{ steps.ssh.outputs.SERVER }} ./deploy-server.sh
+          
